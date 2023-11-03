@@ -1,0 +1,8 @@
+# ignore excel
+*.xlsx
+*.xls
+*.xlsx#
+*.xls#
+# ignore pdf 
+*.pdf
+*.exe
