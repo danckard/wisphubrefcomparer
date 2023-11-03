@@ -35,7 +35,15 @@ def processpdf(filename):
                 
     referencespdf=set(referencespdf)
     return referencespdf
+<<<<<<< HEAD
 
+=======
+    # .title()s
+    # testing line 
+
+
+    
+>>>>>>> 27bfaee (	modified:   initmarir.py)
 def processxls(filename):
     referencesexcel=[]
     wb_obj = openpyxl.load_workbook(filename)
