@@ -8,3 +8,4 @@ pyautogui
 ctypes  # An included library with Python install.
 requests
 difflib
+auto-py-to-exe
