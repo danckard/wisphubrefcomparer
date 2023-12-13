@@ -1,4 +1,5 @@
 import PyPDF2
+import platform
 import re
 import os
 import openpyxl
@@ -8,12 +9,19 @@ import pyautogui
 import ctypes  # An included library with Python install.
 import requests
 import difflib
-def key(choices, keyword):
-    matches = difflib.get_close_matches(keyword, choices)
-    if matches:
-        best_match, *_ = matches
-        return difflib.SequenceMatcher(None, keyword, best_match).ratio()
-    return 0.0
+import random
+from tqdm import tqdm, trange
+
+def progressbar(value,maxvalue):
+    pbar = tqdm(total=int(maxvalue),colour='blue')
+    pbar.update(value)
+
+# def key(choices, keyword):
+#     matches = difflib.get_close_matches(keyword, choices)
+#     if matches:
+#         best_match, *_ = matches
+#         return difflib.SequenceMatcher(None, keyword, best_match).ratio()
+#     return 0.0
 
 banescofiles=[]
 mercantilfiles=[]
@@ -43,11 +51,13 @@ def processpdf(filename):
                     except:
                         continue
                     if "Mercantil en Línea" not in line:
-                        if reference.startswith('000000'):
-                            # reference=cellvalue[6:]
-                            print('detectado ref provincial')
-                        if reference.startswith('0000'):
-                            print('detectado ref provincial')
+                        # if reference.startswith('000000'):
+                        #     # reference=cellvalue[6:]
+                        #     print('detectado ref provincial')
+                        # if reference.startswith('0000'):
+                        #     print('detectado ref provincial')
+                        if len(reference)>=7:
+                            reference=reference[4:]
                         # print(reference)
                         referencespdf.append(str(reference))
                         reflocations.append(str(reference)+':'+str(counter)+':'+str(filename))
@@ -66,21 +76,33 @@ def processxls(filename):
     if re.findall('bnc',str(((filename).lower()))):
         banktype='bnc'
     
-    for row in ws.iter_rows():
-        for cell in row:
+    for thenumber,row in enumerate(ws.iter_rows()):
+        if platform.system() =="Windows":
+            clear = lambda: os.system('cls')
+            # clear()
+        else:
+            clear = lambda: os.system('clear')
+            # clear()
+        # if random.randint(1,10)>=8:
+        progressbar(int(thenumber),int(ws.max_row))
+        # time.sleep(0.5)
+        for index, cell in enumerate(row):
             if banktype=='banesco':
                 refletter='B'
             if banktype=='bnc':
                 refletter='M'
             try:
+                
                 if cell.column_letter==refletter:
+                    
                     if re.search('\d+',str((cell.value))):
                         cellvalue=str(cell.value)
                         if cellvalue.startswith('000000'):
-                            print('detectado provincial')
+                            # print('detectado provincial')
                             cellvalue=cellvalue[5:]
                         if cellvalue.startswith('0000'):
                             print('detectado provincial')
+                            cellvalue=cellvalue[4:]
                         # print(cell.value)
                         referencesexcel.append(str(cellvalue))
                         reflocations.append(str(cellvalue)+':'+str(cell.coordinate)+':'+str(filename))
@@ -103,7 +125,16 @@ def processfactura(filename,referecelist,reflocations):
     validscolumns=[]
     wb_obj = openpyxl.load_workbook(filename)
     ws = wb_obj.active
-    for row in ws.iter_rows():
+    
+    for thenumber,row in enumerate(ws.iter_rows()):
+        if platform.system() =="Windows":
+            clear = lambda: os.system('cls')
+            # clear()
+        else:
+            clear = lambda: os.system('clear')
+            # clear()
+        # if random.randint(1,10)>=8:
+        progressbar(int(thenumber),int(ws.max_row))
         response=None
         for cell in row:
             if str((cell.value)) =='Referencia':
@@ -114,22 +145,21 @@ def processfactura(filename,referecelist,reflocations):
                         if re.search('\d+',str((cell.value))):
                             extractedref=re.search('\d+',str((cell.value))).group()
                             if extractedref.startswith('000000'):
-                                print('detectado ref provincial 6 ceros')
+                                # print('detectado ref provincial 6 ceros')
                                 extractedref=extractedref[6:]
                             if extractedref.startswith('0000'):
-                                print('detectado ref 4 ceros')
+                                # print('detectado ref 4 ceros')
                                 extractedref=extractedref[4:]
                             if extractedref.startswith('000'):
-                                print('detectado ref 3 ceros')
+                                # print('detectado ref 3 ceros')
                                 extractedref=extractedref[3:]
                             if extractedref.startswith('00'):
-                                print('detectado ref 2 ceros')
+                                # print('detectado ref 2 ceros')
                                 extractedref=extractedref[2:]
                             if extractedref.startswith('0'):
-                                print('detectado ref 1 cero')
+                                # print('detectado ref 1 cero')
                                 extractedref=extractedref[1:]
                             # print(extractedref)
-                            
                             resx = difflib.get_close_matches(extractedref, referecelist,cutoff=0.82)
                             if len(resx)== 1:
                                 for i in reflocations:
@@ -150,32 +180,32 @@ def processfactura(filename,referecelist,reflocations):
                                                 thatlocation12=i
                                                 refloc2=refl[1]
                                                 filename2=refl[2]
-                                        print(resx)
+                                        # print(resx)
                                         response=pyautogui.confirm(text='encontre una referencia muy parecida, la referencia es '+extractedref+'\nlas referencias encontradas fueron estas;\n'+str(resx[0])+' en '+str(filename1) +' en la locacion :'+str(refloc1) +' y \n'+str(resx[1])+ ' en '+str(filename2) +' en la locacion: '+str(refloc2)+'\nlas tomo validas ?', title='error', buttons=['Si', 'No'])
                                         if response =='Si':
                                             validscolumns.append(cell.coordinate)
                                         if response =='No':
                                             invalidscolumns.append(cell.coordinate)
                             if extractedref in referecelist:
-                                print(extractedref)
+                                # print(extractedref)
                                 if response is None:
                                     validscolumns.append(cell.coordinate)
                                 # print(reflocations[int(list(referecelist).index(str(extractedref)))])
                                 # print(int(list(referecelist).index(str(extractedref))))
-                                print('encontre referencia valida')
+                                # print('encontre referencia valida')
                                 
                             else:
                                 if response is None:
                                     invalidscolumns.append(cell.coordinate)
                     except Exception as e: 
-                        print(e)
+                        # print(e)
                         pass
                         
             except UnboundLocalError:
                 pass
     
     for coordinates in invalidscolumns:
-        print(coordinates)
+        # print(coordinates)
         ws[coordinates].fill = colorcell('red')
     for coordinates in validscolumns:
         ws[coordinates].fill = colorcell('green')
@@ -254,4 +284,4 @@ if len(mercantilfiles)==0:
         exit()
 if not facturafilename is None:
     valids,invalids=processfactura(facturafilename,set(references),reflocations)
-    response=pyautogui.confirm(text='se han encontrado '+valids+' referencias en la factura\nse han encontrado '+invalids+' invalidas ', title='error', buttons=['Aceptar'])
+    response=pyautogui.confirm(text='se han encontrado '+valids+' referencias validas en la factura\nse han encontrado '+invalids+' invalidas de '+str(int(valids)+int(invalids))+' en total', title='error', buttons=['Aceptar'])
